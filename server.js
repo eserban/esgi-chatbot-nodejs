@@ -1,15 +1,11 @@
-const fs = require('fs');
 const express = require('express');
 const PORT = process.env.PORT || 3000;
-const fichierRéponses = "réponses.json";
+const MongoClient = require('mongodb').MongoClient;
+const uri = "mongodb+srv://adrien:adrien@cluster0.2vz2z.mongodb.net/myFirstDatabase?retryWrites=true&w=majority";
+const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true });
 (async () => {
-    let définitions = {};
-    try{
-        définitions = JSON.parse(await fs.promises.readFile(fichierRéponses, { encoding: 'utf8' }));
-    }catch(err){
-        console.log("Le fichier reponses.json n'existe pas encore");
-    }
-        
+ await client.connect();
+ const collection = client.db("test").collection("messages");
  // instancier le serveur applicatif "express"
  const app = express();
  app.use(express.json());
@@ -25,27 +21,42 @@ const fichierRéponses = "réponses.json";
  res.send('Quel est votre nom ?');
  }
  });
+ app.get('/messages/all', async (req, res) => {
+ const docs = await collection.find({}).toArray();
+ res.send(docs);
+ });
  // ajouter le point d'entrée `POST /chat` comme spécifié dans l'énoncé
- app.post('/chat', (req, res) => {
- // 1. chercher si on connait une définition de ce mot
- if (req.body.msg in définitions) {
- res.send(`${req.body.msg}: ${définitions[req.body.msg]}`);
- return;
- }
- // 2. si l'utilisateur fournit une définition, la stocker
- const parties = req.body.msg.split(" = ");
- if (parties.length === 2) {
- définitions[parties[0]] = parties[1];
- fs.promises.writeFile(fichierRéponses, JSON.stringify(définitions), { encoding: 'utf8' });
- res.send("Merci pour cette information !");
- return;
- }
+ app.post('/chat', async (req, res) => {
+ let réponse;
  if (req.body.msg === "ville") {
- res.send("Nous sommes à Paris");
+ réponse = "Nous sommes à Paris";
  } else if (req.body.msg === "météo") {
- res.send("Il fait beau");
+ réponse = "Il fait beau";
  } else {
- res.send(`Je ne connais pas ${req.body.msg}`);
+ réponse = `Je ne connais pas ${req.body.msg}`;
+ }
+ await collection.insertMany([
+ {
+ from: "user",
+ msg: req.body.msg,
+ },
+ {
+ from: "bot",
+ msg: réponse,
+ }
+ ]);
+ res.send(réponse);
+ });
+ app.delete('/messages/last', async (req, res) => {
+ try {
+ const docs = await collection.find().sort( { _id : -1 } ).limit(2).toArray();
+ const idRéponse = docs[0]._id;
+ const idQuestion = docs[1]._id;
+ await collection.deleteOne({ _id: idRéponse });
+ await collection.deleteOne({ _id: idQuestion });
+ res.send({ success: true, result: docs });
+ } catch (err) {
+ res.send({ success: false, error: "unable to delete last conversation" });
  }
  });
  // demander au serveur applicatif d'attendre des requêtes depuis le port spécifié plus haut
@@ -53,4 +64,3 @@ const fichierRéponses = "réponses.json";
  console.log(`Example app listening at http://localhost:${PORT}`);
  });
 })();
-// pensez à réparer l'indentation
