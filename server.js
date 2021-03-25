@@ -52,18 +52,21 @@ const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology:
         ]);
         res.send(réponse);
     });
+
+    
     app.delete('/messages/last', async (req, res) => {
-    try {
-    const docs = await collection.find().sort( { _id : -1 } ).limit(2).toArray();
-    const idRéponse = docs[0]._id;
-    const idQuestion = docs[1]._id;
-    await collection.deleteOne({ _id: idRéponse });
-    await collection.deleteOne({ _id: idQuestion });
-    res.send({ success: true, result: docs });
-    } catch (err) {
-    res.send({ success: false, error: "unable to delete last conversation" });
-    }
+        try {
+            const docs = await collection.find().sort( { _id : -1 } ).limit(2).toArray();
+            const idRéponse = docs[0]._id;
+            const idQuestion = docs[1]._id;
+            await collection.deleteOne({ _id: idRéponse });
+            await collection.deleteOne({ _id: idQuestion });
+            res.send({ success: true, result: docs });
+        } catch (err) {
+            res.send({ success: false, error: "unable to delete last conversation" });
+        }
     });
+
     // demander au serveur applicatif d'attendre des requêtes depuis le port spécifié plus haut
     app.listen(PORT, () => {
     console.log(`Example app listening at http://localhost:${PORT}`);
