@@ -1,8 +1,10 @@
 const express = require('express');
 const PORT = process.env.PORT || 3000;
+
 const MongoClient = require('mongodb').MongoClient;
-const uri = "mongodb+srv://adrien:adrien@cluster0.2vz2z.mongodb.net/myFirstDatabase?retryWrites=true&w=majority";
+const uri = "mongodb+srv://admin-mongo:Serban2708@node-js-cours.rmpru.mongodb.net/myFirstDatabase?retryWrites=true&w=majority";
 const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true });
+
 (async () => {
     await client.connect();
     const collection = client.db("test").collection("messages");
@@ -15,7 +17,6 @@ const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology:
     app.get('/', (req, res) => {
         res.send('Bonjour !');
     });
-
     // ajouter le point d'entrée `GET /hello?nom=XXX` comme spécifié dans l'énoncé
     app.get('/hello', (req, res) => {
         if (req.query.nom) {
@@ -24,12 +25,10 @@ const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology:
             res.send('Quel est votre nom ?');
         }
     });
-
     app.get('/messages/all', async (req, res) => {
         const docs = await collection.find({}).toArray();
         res.send(docs);
     });
-
     // ajouter le point d'entrée `POST /chat` comme spécifié dans l'énoncé
     app.post('/chat', async (req, res) => {
         let réponse;
@@ -52,8 +51,6 @@ const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology:
         ]);
         res.send(réponse);
     });
-
-    
     app.delete('/messages/last', async (req, res) => {
         try {
             const docs = await collection.find().sort( { _id : -1 } ).limit(2).toArray();
@@ -66,9 +63,8 @@ const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology:
             res.send({ success: false, error: "unable to delete last conversation" });
         }
     });
-
     // demander au serveur applicatif d'attendre des requêtes depuis le port spécifié plus haut
     app.listen(PORT, () => {
-    console.log(`Example app listening at http://localhost:${PORT}`);
+        console.log(`Example app listening at http://localhost:${PORT}`);
     });
 })();
